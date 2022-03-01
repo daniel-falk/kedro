@@ -3,7 +3,6 @@ from typing import Any, Dict, Iterable, Generator, Union
 
 from kedro.io.core import (
     AbstractDataSet,
-    get_filepath_str,
     get_protocol_and_path,
 )
 
@@ -12,6 +11,7 @@ import cv2
 import PIL.Image
 import numpy as np
 import more_itertools
+import tempfile
 
 
 class SlicedVideo:
@@ -184,7 +184,6 @@ class VideoDataSet(AbstractDataSet):
         protocol, path = get_protocol_and_path(filepath)
         self._protocol = protocol
         self._filepath = PurePosixPath(path)
-        self._fs = fsspec.filesystem(self._protocol)
 
     def _load(self) -> AbstractVideo:
         """Loads data from the video file.
@@ -192,29 +191,30 @@ class VideoDataSet(AbstractDataSet):
         Returns:
             Data from the video file as a AbstractVideo object
         """
-        load_path = get_filepath_str(self._filepath, self._protocol)
-        with self._fs.open(load_path, mode="r") as f:
-            return FileVideo(load_path)
+        with fsspec.open("filecache::%s://%s" % (self._protocol, self._filepath), mode="rb") as f:
+            return FileVideo(f.name)
 
     def _save(self, video: AbstractVideo) -> None:
         """Saves image data to the specified filepath.
         """
-        save_path = get_filepath_str(self._filepath, self._protocol)
         # TODO: This assumes that the output file has the same fourcc code as the input file,
         # this might not be the case since we can use one VideoDataSet to read e.g. a mp4 file with H264 video
         # and then save it to another VideoDataSet which should use an .avi file with MJPEG
-        # TODO: There is no way to use the OpenVN VideoWrite to write to an open file, so it does not
-        # work together with fsspec. Investigate this further...
-        writer = cv2.VideoWriter(
-            save_path, cv2.VideoWriter_fourcc(*video.fourcc), video.fps, video.size
-        )
-        try:
-            for frame in video:
-                writer.write(  # PIL images are RGB, opencv expects BGR
-                    np.asarray(frame)[:, :, ::-1]
-                )
-        finally:
-            writer.release()
+        with tempfile.NamedTemporaryFile(suffix=self._filepath.suffix, mode="wb") as tmp:
+            writer = cv2.VideoWriter(
+                tmp.name, cv2.VideoWriter_fourcc(*video.fourcc), video.fps, video.size
+            )
+            try:
+                for frame in video:
+                    writer.write(  # PIL images are RGB, opencv expects BGR
+                        np.asarray(frame)[:, :, ::-1]
+                    )
+            finally:
+                writer.release()
+
+            with fsspec.open("%s://%s" % (self._protocol, self._filepath), "wb") as f_target:
+                with open(tmp.name, "rb") as f_tmp:
+                    f_target.write(f_tmp.read())
 
     def _describe(self) -> Dict[str, Any]:
         return dict(filepath=self._filepath, protocol=self._protocol)
