@@ -191,21 +191,26 @@ class VideoDataSet(AbstractDataSet):
         Returns:
             Data from the video file as a AbstractVideo object
         """
-        with fsspec.open("filecache::%s://%s" % (self._protocol, self._filepath), mode="rb") as f:
+        with fsspec.open(
+            "filecache::%s://%s" % (self._protocol, self._filepath), mode="rb"
+        ) as f:
             return FileVideo(f.name)
 
     def _save(self, video: AbstractVideo) -> None:
-        """Saves video data to the specified filepath.
-        """
+        """Saves video data to the specified filepath."""
         if self._protocol == "file":
             # Write directly to the local file destination
             self._write_to_filepath(video, str(self._filepath))
         else:
             # VideoWriter cant write to an open file object, instead write to a
             # local tmpfile and then copy that to the destination with fsspec
-            with tempfile.NamedTemporaryFile(suffix=self._filepath.suffix, mode="wb") as tmp:
+            with tempfile.NamedTemporaryFile(
+                suffix=self._filepath.suffix, mode="wb"
+            ) as tmp:
                 self._write_to_filepath(video, tmp.name)
-                with fsspec.open("%s://%s" % (self._protocol, self._filepath), "wb") as f_target:
+                with fsspec.open(
+                    "%s://%s" % (self._protocol, self._filepath), "wb"
+                ) as f_target:
                     with open(tmp.name, "rb") as f_tmp:
                         f_target.write(f_tmp.read())
 
