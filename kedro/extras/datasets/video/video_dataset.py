@@ -195,26 +195,37 @@ class VideoDataSet(AbstractDataSet):
             return FileVideo(f.name)
 
     def _save(self, video: AbstractVideo) -> None:
-        """Saves image data to the specified filepath.
+        """Saves video data to the specified filepath.
         """
-        # TODO: This assumes that the output file has the same fourcc code as the input file,
-        # this might not be the case since we can use one VideoDataSet to read e.g. a mp4 file with H264 video
-        # and then save it to another VideoDataSet which should use an .avi file with MJPEG
-        with tempfile.NamedTemporaryFile(suffix=self._filepath.suffix, mode="wb") as tmp:
-            writer = cv2.VideoWriter(
-                tmp.name, cv2.VideoWriter_fourcc(*video.fourcc), video.fps, video.size
-            )
-            try:
-                for frame in video:
-                    writer.write(  # PIL images are RGB, opencv expects BGR
-                        np.asarray(frame)[:, :, ::-1]
-                    )
-            finally:
-                writer.release()
+        if self._protocol == "file":
+            # Write directly to the local file destination
+            self._write_to_filepath(video, str(self._filepath))
+        else:
+            # VideoWriter cant write to an open file object, instead write to a
+            # local tmpfile and then copy that to the destination with fsspec
+            with tempfile.NamedTemporaryFile(suffix=self._filepath.suffix, mode="wb") as tmp:
+                self._write_to_filepath(video, tmp.name)
+                with fsspec.open("%s://%s" % (self._protocol, self._filepath), "wb") as f_target:
+                    with open(tmp.name, "rb") as f_tmp:
+                        f_target.write(f_tmp.read())
 
-            with fsspec.open("%s://%s" % (self._protocol, self._filepath), "wb") as f_target:
-                with open(tmp.name, "rb") as f_tmp:
-                    f_target.write(f_tmp.read())
+    def _write_to_filepath(self, video: AbstractVideo, filepath: str) -> None:
+        # TODO: This takes the the fourcc code (codec) from the Video object, the video object does not know what
+        # container format will be used since that is selected by the suffix in the file name. Some combinations
+        # of codec and container format might not work or will have bad support. There should at least be a way to
+        # set a video to no prefered codec and then select one based on the file suffix. If the video object is a
+        # FileVideo, then the fourcc code is set from the read file which might have another suffix/container format
+        # then the file we are writing to.
+        writer = cv2.VideoWriter(
+            filepath, cv2.VideoWriter_fourcc(*video.fourcc), video.fps, video.size
+        )
+        try:
+            for frame in video:
+                writer.write(  # PIL images are RGB, opencv expects BGR
+                    np.asarray(frame)[:, :, ::-1]
+                )
+        finally:
+            writer.release()
 
     def _describe(self) -> Dict[str, Any]:
         return dict(filepath=self._filepath, protocol=self._protocol)
