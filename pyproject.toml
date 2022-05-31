@@ -15,6 +15,7 @@ default_section = "THIRDPARTY"
 ignore = "CVS"
 ignore-patterns = "kedro/templates/*"
 load-plugins = "pylint.extensions.docparams"
+extension-pkg-whitelist = "cv2"
 unsafe-load-any-extension = false
 [tool.pylint.messages_control]
 disable = [
