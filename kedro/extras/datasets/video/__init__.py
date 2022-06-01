@@ -2,7 +2,4 @@
 
 __all__ = ["VideoDataSet"]
 
-from contextlib import suppress
-
-with suppress(ImportError):
-    from .video_dataset import VideoDataSet
+from kedro.extras.datasets.video.video_dataset import VideoDataSet
