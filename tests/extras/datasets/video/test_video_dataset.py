@@ -1,5 +1,4 @@
 import itertools
-from pathlib import Path
 
 import boto3
 import numpy as np
@@ -14,16 +13,6 @@ from kedro.io import DataSetError
 S3_BUCKET_NAME = "test_bucket"
 S3_KEY_PATH = "video"
 S3_FULL_PATH = f"s3://{S3_BUCKET_NAME}/{S3_KEY_PATH}/"
-
-
-@pytest.fixture
-def filepath_mp4():
-    return str(Path(__file__).parent / "data/video.mp4")
-
-
-@pytest.fixture
-def filepath_mjpeg():
-    return str(Path(__file__).parent / "data/video.mjpeg")
 
 
 @pytest.fixture
@@ -44,16 +33,6 @@ def empty_dataset_mp4(tmp_filepath_mp4):
 @pytest.fixture
 def empty_dataset_avi(tmp_filepath_avi):
     return VideoDataSet(filepath=tmp_filepath_avi)
-
-
-@pytest.fixture
-def mp4_object(filepath_mp4):
-    return FileVideo(filepath_mp4)
-
-
-@pytest.fixture
-def mjpeg_object(filepath_mjpeg):
-    return FileVideo(filepath_mjpeg)
 
 
 @pytest.fixture
