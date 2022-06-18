@@ -7,7 +7,7 @@ from moto import mock_s3
 from PIL import ImageChops
 
 from kedro.extras.datasets.video import VideoDataSet
-from kedro.extras.datasets.video.video_dataset import FileVideo
+from kedro.extras.datasets.video.video_dataset import FileVideo, SequenceVideo
 from kedro.io import DataSetError
 
 S3_BUCKET_NAME = "test_bucket"
@@ -108,3 +108,41 @@ class TestVideoDataSet:
         )
         reloaded_video = FileVideo(str(tmp_file))
         assert_videos_equal(reloaded_video, mp4_object)
+
+    @pytest.mark.xfail
+    @pytest.mark.parametrize(
+        "fourcc, suffix",
+        [
+            ("mp4v", "mp4"),
+            ("mp4v", "mjpeg"),
+            ("mp4v", "avi"),
+            ("avc1", "mp4"),
+            ("avc1", "mjpeg"),
+            ("avc1", "avi"),
+            ("mjpg", "mp4"),
+            ("mjpg", "mjpeg"),
+            ("mjpg", "avi"),
+            ("xvid", "mp4"),
+            ("xvid", "mjpeg"),
+            ("xvid", "avi"),
+            ("x264", "mp4"),
+            ("x264", "mjpeg"),
+            ("x264", "avi"),
+            ("divx", "mp4"),
+            ("divx", "mjpeg"),
+            ("divx", "avi"),
+            ("fmp4", "mp4"),
+            ("fmp4", "mjpeg"),
+            ("fmp4", "avi"),
+        ],
+    )
+    def test_video_codecs(self, fourcc, suffix, color_video):
+        """Test different codec and container combinations
+
+        Some of these are expected to fail depending on what
+        codecs are installed on the machine.
+        """
+        video_name = "video.%s" % suffix
+        video = SequenceVideo(color_video._frames, 25, fourcc)
+        ds = VideoDataSet(video_name, fourcc=None)
+        ds.save(video)
