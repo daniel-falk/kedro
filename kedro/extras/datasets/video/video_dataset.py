@@ -125,7 +125,7 @@ class SequenceVideo(AbstractVideo):
     """A video object read from an indexable sequence of frames"""
 
     def __init__(
-        self, frames: Sequence[PIL.Image.Image], fps: float, fourcc: str = "avc1"
+        self, frames: Sequence[PIL.Image.Image], fps: float, fourcc: str = "mp4v"
     ) -> None:
         self._n_frames = len(frames)
         self._frames = frames
@@ -159,7 +159,7 @@ class GeneratorVideo(AbstractVideo):
         frames: Generator[PIL.Image.Image, None, None],
         length,
         fps: float,
-        fourcc: str = "avc1",
+        fourcc: str = "mp4v",
     ) -> None:
         self._n_frames = length
         self._gen = more_itertools.peekable(frames)
