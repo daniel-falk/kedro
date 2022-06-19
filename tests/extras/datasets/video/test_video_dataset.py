@@ -1,10 +1,7 @@
-import itertools
-
 import boto3
-import numpy as np
 import pytest
 from moto import mock_s3
-from PIL import ImageChops
+from utils import TEST_FPS, assert_videos_equal
 
 from kedro.extras.datasets.video import VideoDataSet
 from kedro.extras.datasets.video.video_dataset import FileVideo, SequenceVideo
@@ -44,22 +41,6 @@ def mocked_s3_bucket():
         yield conn
 
 
-def assert_images_equal(image_1, image_2):
-    """Assert that two images are approximately equal, allow for some
-    compression artifacts"""
-    assert image_1.size == image_2.size
-    diff = np.asarray(ImageChops.difference(image_1, image_2))
-    assert np.mean(diff) < 5
-    assert np.mean(diff > 50) < 0.01  # Max 1% of pixels
-
-
-def assert_videos_equal(video_1, video_2):
-    assert len(video_1) == len(video_2)
-
-    for image_1, image_2 in itertools.zip_longest(video_1, video_2):
-        assert_images_equal(image_1, image_2)
-
-
 class TestVideoDataSet:
     def test_load_mp4(self, filepath_mp4, mp4_object):
         """Loading a mp4 dataset should create a FileVideo"""
@@ -72,6 +53,50 @@ class TestVideoDataSet:
         empty_dataset_mp4.save(mp4_object)
         reloaded_video = empty_dataset_mp4.load()
         assert_videos_equal(mp4_object, reloaded_video)
+        assert reloaded_video.fourcc == empty_dataset_mp4._fourcc
+
+    @pytest.mark.skip(
+        reason="Only one available codec that is typically installed when testing"
+    )
+    def test_save_with_other_codec(self, tmp_filepath_mp4, mp4_object):
+        """Test saving the video with another codec than default."""
+        save_fourcc = "xvid"
+        ds = VideoDataSet(filepath=tmp_filepath_mp4, fourcc=save_fourcc)
+        ds.save(mp4_object)
+        reloaded_video = ds.load()
+        assert reloaded_video.fourcc == save_fourcc
+
+    def test_save_with_derived_codec(self, tmp_filepath_mp4, color_video):
+        """Test saving video by the codec specified in the video object"""
+        ds = VideoDataSet(filepath=tmp_filepath_mp4, fourcc=None)
+        ds.save(color_video)
+        reloaded_video = ds.load()
+        assert reloaded_video.fourcc == color_video.fourcc
+
+    def test_saved_fps(self, empty_dataset_mp4, color_video):
+        """Verify that a saved video has the same framerate as specified in the video object"""
+        empty_dataset_mp4.save(color_video)
+        reloaded_video = empty_dataset_mp4.load()
+        assert reloaded_video.fps == TEST_FPS
+
+    def test_save_sequence_video(self, color_video, empty_dataset_mp4):
+        """Test save (and load) a SequenceVideo object"""
+        empty_dataset_mp4.save(color_video)
+        reloaded_video = empty_dataset_mp4.load()
+        assert_videos_equal(color_video, reloaded_video)
+
+    def test_save_generator_video(
+        self, color_video_generator, empty_dataset_mp4, color_video
+    ):
+        """Test save (and load) a GeneratorVideo object
+
+        Since the GeneratorVideo is exhaused after saving the video to file we use
+        the SequenceVideo (color_video) which has the same frames to compare the
+        loaded video to.
+        """
+        empty_dataset_mp4.save(color_video_generator)
+        reloaded_video = empty_dataset_mp4.load()
+        assert_videos_equal(color_video, reloaded_video)
 
     def test_exists(self, empty_dataset_mp4, mp4_object):
         """Test `exists` method invocation for both existing and
@@ -146,3 +171,8 @@ class TestVideoDataSet:
         video = SequenceVideo(color_video._frames, 25, fourcc)
         ds = VideoDataSet(video_name, fourcc=None)
         ds.save(video)
+        # We also need to verify that the correct codec was used
+        # since OpenCV silently (with a warning in the log) fall backs to
+        # another codec if one specified is not compatible with the container
+        reloaded_video = ds.load()
+        assert reloaded_video.fourcc == fourcc
