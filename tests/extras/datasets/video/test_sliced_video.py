@@ -30,6 +30,11 @@ class TestSlicedVideo:
         assert np.all(purple[:, :, 1] == 0)
         assert np.all(purple[:, :, 2] == 255)
 
+    def test_slice_sequence_attribute(self, color_video):
+        """Test that attributes from the base class are reachable from sliced views"""
+        slice_red_green = color_video[:2]
+        assert slice_red_green.fps == color_video.fps
+
     def test_slice_sliced_video(self, color_video):
         """Test slicing and then indexing a SlicedVideo"""
         slice_green_blue_yellow = color_video[1:4]

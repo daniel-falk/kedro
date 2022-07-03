@@ -21,7 +21,11 @@ from utils import (
     assert_images_equal,
 )
 
-from kedro.extras.datasets.video.video_dataset import GeneratorVideo, SequenceVideo
+from kedro.extras.datasets.video.video_dataset import (
+    FileVideo,
+    GeneratorVideo,
+    SequenceVideo,
+)
 
 
 class TestSequenceVideo:
@@ -145,3 +149,22 @@ class TestFileVideo:
 
     def test_file_index_last(self, color_video_object, purple_frame):
         assert_images_equal(color_video_object[-1], purple_frame)
+
+    def test_file_video_failed_capture(self, mocker):
+        """Validate good behavior on failed decode
+
+        The best behavior in this case is not obvious, the len property of the
+        video object specifies more frames than is actually possible to decode. We
+        cannot know this in advance without spending loads of time to decode all frames
+        in order to count them."""
+        mock_cv2 = mocker.patch("kedro.extras.datasets.video.video_dataset.cv2")
+        mock_cap = mock_cv2.VideoCapture.return_value = mocker.Mock()
+        mock_cap.get.return_value = 2  # Set the length of the video
+        ds = FileVideo("/a/b/c")
+
+        mock_cap.read.return_value = True, np.zeros((1, 1))
+        assert ds[0]
+
+        mock_cap.read.return_value = False, None
+        with pytest.raises(IndexError):
+            ds[1]
