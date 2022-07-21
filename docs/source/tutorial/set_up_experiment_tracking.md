@@ -9,9 +9,9 @@ Enabling experiment tracking features on Kedro-Viz relies on:
 * [experiment tracking datasets to let Kedro know what metrics should be tracked](#set-up-tracking-datasets)
 * [modifying your nodes and pipelines to output those metrics](#set-up-your-nodes-and-pipelines-to-log-metrics).
 
-This tutorial will provide a step-by-step process to set up experiment tracking and access your logged metrics from each run on Kedro-Viz. It will use the spaceflights starter project outlined in [this tutorial](../tutorial/spaceflights_tutorial.md) and build on previously discussed topics such as [namespacing](../tutorial/namespace_pipelines.md). You can also jump directly to [this section for direct reference in setting up experiment tracking](../logging/experiment_tracking.md) for your Kedro project.
+This tutorial will provide a step-by-step process to set up experiment tracking and access your logged metrics from each run on Kedro-Viz. It will use the starter outlined in the [spaceflights tutorial](../tutorial/spaceflights_tutorial.md) and build on previously discussed topics such as [namespacing](../tutorial/namespace_pipelines.md). You can also jump directly to [this section for direct reference in setting up experiment tracking](../logging/experiment_tracking.md) for your Kedro project.
 
-You can also access a more detailed [demo](https://kedro-viz-live-demo.hfa4c8ufrmn4u.eu-west-2.cs.amazonlightsail.com/).
+You can also access a more detailed [Kedro-Viz live demo](https://kedro-viz-live-demo.hfa4c8ufrmn4u.eu-west-2.cs.amazonlightsail.com/).
 
 ## Set up a project
 
@@ -173,5 +173,9 @@ When you open the Kedro-Viz web app, you will see an experiment tracking icon ![
 You can now access, compare and pin your runs by toggling the `Compare runs` button:
 
 ![](../meta/images/experiment-tracking_demo.gif)
+
+Additionally, you can monitor the changes to metrics over time from the pipeline visualisation tab ![](../meta/images/pipeline_visualisation_icon.png). Clicking on any [MetricsDataset](https://kedro.readthedocs.io/en/stable/kedro.extras.datasets.tracking.MetricsDataSet.html) node will open a side panel displaying how the metric value has changed over time.
+
+![](../meta/images/pipeline_show_metrics.gif)
 
 Keep an eye out on the [Kedro-Viz release page](https://github.com/kedro-org/kedro-viz/releases) for the upcoming releases on this experiment tracking functionality.
