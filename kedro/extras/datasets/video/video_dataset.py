@@ -236,14 +236,15 @@ class VideoDataSet(AbstractDataSet):
         else:
             # VideoWriter cant write to an open file object, instead write to a
             # local tmpfile and then copy that to the destination with fsspec
-            with tempfile.NamedTemporaryFile(
+            tmp_file =  tempfile.NamedTemporaryFile(
                 suffix=self._filepath.suffix, mode="w+b"
-            ) as tmp_file:
-                self._write_to_filepath(data, tmp_file.name)
-                with fsspec.open(
-                    f"{self._protocol}://{self._filepath}", "wb"
-                ) as f_target:
-                    f_target.write(tmp_file.read())
+            ) 
+            self._write_to_filepath(data, tmp_file.name)
+            with fsspec.open(
+                f"{self._protocol}://{self._filepath}", "wb"
+            ) as f_target:
+                f_target.write(tmp_file.read())
+            os.unlink(tmp_file.name)  # Clean up after fsspec upload
 
     def _write_to_filepath(self, video: AbstractVideo, filepath: str) -> None:
         # TODO: This uses the codec specified in the VideoDataSet if it is not None, this is due
