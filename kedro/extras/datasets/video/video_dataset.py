@@ -239,7 +239,8 @@ class VideoDataSet(AbstractDataSet):
             # local tmpfile and then copy that to the destination with fsspec
             tmp_file =  tempfile.NamedTemporaryFile(
                 suffix=self._filepath.suffix, mode="w+b"
-            ) 
+            )
+            tmp_file.close()  # Need to close file manually otherwise VideoWriter cannot write.
             self._write_to_filepath(data, tmp_file.name)
             with fsspec.open(
                 f"{self._protocol}://{self._filepath}", "wb"

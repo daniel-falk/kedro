@@ -10,16 +10,16 @@ from kedro.io import DataSetError
 S3_BUCKET_NAME = "test_bucket"
 S3_KEY_PATH = "video"
 S3_FULL_PATH = f"s3://{S3_BUCKET_NAME}/{S3_KEY_PATH}/"
-
+AWS_CREDENTIALS = {"key": "FAKE_ACCESS_KEY", "secret": "FAKE_SECRET_KEY"}
 
 @pytest.fixture
 def tmp_filepath_mp4(tmp_path):
-    return str((tmp_path / "test.mp4").as_posix())
+    return (tmp_path / "test.mp4").as_posix()
 
 
 @pytest.fixture
 def tmp_filepath_avi(tmp_path):
-    return str((tmp_path / "test.mjpeg").as_posix())
+    return (tmp_path / "test.mjpeg").as_posix()
 
 
 @pytest.fixture
@@ -36,7 +36,12 @@ def empty_dataset_avi(tmp_filepath_avi):
 def mocked_s3_bucket():
     """Create a bucket for testing using moto."""
     with mock_s3():
-        conn = boto3.client("s3")
+        conn = boto3.client(
+            "s3",
+            region_name="us-east-1",
+            aws_access_key_id="fake_access_key",
+            aws_secret_access_key="fake_secret_key",
+        )
         conn.create_bucket(Bucket=S3_BUCKET_NAME)
         yield conn
 
