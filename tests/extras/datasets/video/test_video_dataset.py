@@ -12,6 +12,7 @@ S3_KEY_PATH = "video"
 S3_FULL_PATH = f"s3://{S3_BUCKET_NAME}/{S3_KEY_PATH}/"
 AWS_CREDENTIALS = {"key": "FAKE_ACCESS_KEY", "secret": "FAKE_SECRET_KEY"}
 
+
 @pytest.fixture
 def tmp_filepath_mp4(tmp_path):
     return (tmp_path / "test.mp4").as_posix()
